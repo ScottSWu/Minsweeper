@@ -24,6 +24,8 @@ Minsweeper.Board = function(width, height, mines) {
         this.visible.push(-1);
     }
     
+    var instance = this;
+    
     // Fisher-Yates shuffle
     for (var i = width * height - 1; i >= 1; i--) {
         var r = ~~(Math.random() * (i + 1));
@@ -39,14 +41,14 @@ Minsweeper.Board = function(width, height, mines) {
             if (this.grid[offset] == 0) {
                 // Count mines
                 var count = 0;
-                for (var i = 0; i < 8; i++) {
-                    var nr = r + Minsweeper.Board.SURROUNDING[i][0];
-                    var nc = c + Minsweeper.Board.SURROUNDING[i][1];
-                    var no = this.c2o(nr, nc);
-                    if (this.inBounds(nr, nc) && this.grid[no] < 0) {
+                Minsweeper.Board.SURROUNDING.forEach(function(coord) {
+                    var nr = r + coord[0];
+                    var nc = c + coord[1];
+                    var no = instance.c2o(nr, nc);
+                    if (instance.inBounds(nr, nc) && instance.grid[no] < 0) {
                         count++;
                     }
-                }
+                });
                 
                 this.grid[offset] = count;
             }
@@ -65,6 +67,7 @@ Minsweeper.Board.ALREADYOPENED = 10;
 Minsweeper.Board.FLAGGED = 11;
 Minsweeper.Board.UNFLAGGED = 12;
 Minsweeper.Board.OUTOFBOUNDS = 13;
+Minsweeper.Board.INVALID = 14;
 Minsweeper.Board.SAFE = 20;
 Minsweeper.Board.MINE = 21;
 
@@ -93,6 +96,8 @@ Minsweeper.Board.prototype.o2c = function(x) {
     Open a coordinate.
 */
 Minsweeper.Board.prototype.open = function(r, c) {
+    var instance = this;
+    
     if (this.inBounds(r, c)) {
         var offset = this.c2o(r, c);
         if (this.status[offset] == 1) {
@@ -115,14 +120,14 @@ Minsweeper.Board.prototype.open = function(r, c) {
                 this.opened++;
                 
                 if (this.grid[offset] == 0) {
-                    for (var i = 0; i < 8; i++) {
-                        var nr = coords[0] + Minsweeper.Board.SURROUNDING[i][0];
-                        var nc = coords[1] + Minsweeper.Board.SURROUNDING[i][1];
-                        var no = this.c2o(nr, nc);
-                        if (this.inBounds(nr, nc) && this.status[no] == 0) {
+                    Minsweeper.Board.SURROUNDING.forEach(function(coord) {
+                        var nr = coords[0] + coord[0];
+                        var nc = coords[1] + coord[1];
+                        var no = instance.c2o(nr, nc);
+                        if (instance.inBounds(nr, nc) && instance.status[no] == 0) {
                             openstack.push([ nr, nc ]);
                         }
-                    }
+                    });
                 }
             }
         }
@@ -132,6 +137,53 @@ Minsweeper.Board.prototype.open = function(r, c) {
             this.opened++;
         }
         return Minsweeper.Board.SAFE;
+    }
+    else {
+        return Minsweeper.Board.OUTOFBOUNDS;
+    }
+}
+
+/*
+    Chord a coordinate.
+*/
+Minsweeper.Board.prototype.chord = function(r, c) {
+    var instance = this;
+    
+    if (this.inBounds(r, c)) {
+        var offset = this.c2o(r, c);
+        switch (this.status[offset]) {
+            case 1:
+                var needed = this.grid[offset];
+                var flags = 0;
+                Minsweeper.Board.SURROUNDING.forEach(function(coord) {
+                    var nr = r + coord[0];
+                    var nc = c + coord[1];
+                    var no = instance.c2o(nr, nc);
+                    if (instance.inBounds(nr, nc) && instance.status[no] == 2) {
+                        flags++;
+                    }
+                });
+                
+                if (flags == needed) {
+                    var result = Minsweeper.Board.SAFE;
+                    Minsweeper.Board.SURROUNDING.forEach(function(coord) {
+                        var nr = r + coord[0];
+                        var nc = c + coord[1];
+                        var no = instance.c2o(nr, nc);
+                        if (instance.inBounds(nr, nc) && instance.status[no] == 0) {
+                            if (instance.open(nr, nc) == Minsweeper.Board.MINE) {
+                                result = Minsweeper.Board.MINE;
+                            }
+                        }
+                    });
+                    return result;
+                }
+                else {
+                    return Minsweeper.Board.INVALID;
+                }
+            default:
+                return Minsweeper.Board.INVALID;
+        }
     }
     else {
         return Minsweeper.Board.OUTOFBOUNDS;
@@ -159,6 +211,9 @@ Minsweeper.Board.prototype.flag = function(r, c) {
             case 1:
                 return Minsweeper.Board.ALREADYOPENED;
         }
+    }
+    else {
+        return Minsweeper.Board.OUTOFBOUNDS;
     }
 }
 

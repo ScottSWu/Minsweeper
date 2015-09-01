@@ -74,6 +74,13 @@ Minsweeper.prototype.open = function(r, c) {
 }
 
 /*
+    Chord a coordinate in the game.
+*/
+Minsweeper.prototype.chord = function(r, c) {
+    var result = this.board.chord(r, c);
+}
+
+/*
     Flag a coordinate in the game.
 */
 Minsweeper.prototype.flag = function(r, c) {
@@ -96,4 +103,29 @@ Minsweeper.prototype.getBoard2 = function() {
         }
     }
     return array2;
+}
+
+Minsweeper.prototype.logBoard = function() {
+    var board = this.board.getVisible();
+    var output = "";
+    var offset = 0;
+    for (var r = 0; r < this.height; r++) {
+        for (var c = 0; c < this.width; c++) {
+            switch (board[offset]) {
+                case -2:
+                    output += "P";
+                    break;
+                case -1:
+                    output += "O";
+                    break;
+                default:
+                    output += board[offset];
+                    break;
+            }
+            output += " ";
+            offset++;
+        }
+        output += "\n";
+    }
+    console.log(output);
 }
