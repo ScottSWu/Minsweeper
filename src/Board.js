@@ -136,6 +136,7 @@ Minsweeper.Board.prototype.open = function(r, c) {
             this.visible[offset] = this.grid[offset];
             this.opened++;
         }
+        
         return Minsweeper.Board.SAFE;
     }
     else {
@@ -222,4 +223,11 @@ Minsweeper.Board.prototype.flag = function(r, c) {
 */
 Minsweeper.Board.prototype.getVisible = function() {
     return this.visible;
+}
+
+/*
+    Return whether or not the board has been completed.
+*/
+Minsweeper.Board.prototype.isCompleted = function () {
+    return this.opened == this.maxoffset - this.mines;
 }

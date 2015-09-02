@@ -13,6 +13,11 @@ var Minsweeper = function(width, height, mines, params) {
 
 Minsweeper.prototype.constructor = Minsweeper;
 
+Minsweeper.NOTSTARTED = 0;
+Minsweeper.STARTED = 1;
+Minsweeper.DIED = 2;
+Minsweeper.COMPLETED = 3;
+
 /*
     Reset the game.
 */
@@ -21,7 +26,7 @@ Minsweeper.prototype.reset = function() {
     this.startTime = -1;
     this.endTime = -1;
     
-    this.state = 0;
+    this.state = Minsweeper.NOTSTARTED;
     this.started = false;
     
     this.board = new Minsweeper.Board(this.width, this.height, this.mines);
@@ -33,12 +38,12 @@ Minsweeper.prototype.reset = function() {
 Minsweeper.prototype.getTime = function(time) {
     switch (this.state) {
         default:
-        case 0:
+        case Minsweeper.NOTSTARTED:
             return 0;
-        case 1:
+        case Minsweeper.STARTED:
             return Date.now() - this.startTime;
-        case 2:
-        case 3:
+        case Minsweeper.DIED:
+        case Minsweeper.COMPLETED:
             return this.endTime - this.startTime;
     }
 }
@@ -59,16 +64,21 @@ Minsweeper.prototype.open = function(r, c) {
             if (!this.started) {
                 this.startTime = Date.now();
                 this.started = true;
-                this.state = 1;
+                this.state = Minsweeper.STARTED;
             }
             break;
     }
     switch (result) {
         default:
         case Minsweeper.Board.SAFE:
+            if (this.board.isCompleted()) {
+                this.endTime = Date.now();
+                this.state = Minsweeper.COMPLETED;
+            }
             break;
         case Minsweeper.Board.MINE:
-            this.state = 2;
+            this.endTime = Date.now();
+            this.state = Minsweeper.DIED;
             break;
     }
 }
@@ -87,10 +97,16 @@ Minsweeper.prototype.flag = function(r, c) {
     var result = this.board.flag(r, c);
 }
 
+/*
+    Get a flattened array of the visible board.
+*/
 Minsweeper.prototype.getBoard = function() {
     return this.board.getVisible();
 }
 
+/*
+    Get a 2-d array of the visible board.
+*/
 Minsweeper.prototype.getBoard2 = function() {
     var array1 = this.board.getVisible();
     var array2 = [];
@@ -105,6 +121,9 @@ Minsweeper.prototype.getBoard2 = function() {
     return array2;
 }
 
+/*
+    log the board to the console.
+*/
 Minsweeper.prototype.logBoard = function() {
     var board = this.board.getVisible();
     var output = "";
@@ -128,4 +147,11 @@ Minsweeper.prototype.logBoard = function() {
         output += "\n";
     }
     console.log(output);
+}
+
+/*
+    Check if the game has started.
+*/
+Minsweeper.prototype.getState = function() {
+    return this.state;
 }
