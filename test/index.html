@@ -1,10 +1,169 @@
 <html>
-    <head>
-        <title>Minsweeper.js Test</title>
-        
-        <script type="text/javascript" src="../build/Minsweeper.js"></script>
-    </head>
-    <body>
-        
-    </body>
+	<head>
+		<script type="text/javascript" src="/build/Minsweeper.js"></script>
+		
+		<script type="text/javascript">
+			var AIData = new Map();
+			var AIOptions = {
+				width: 16,
+				height: 16,
+				mines: 40,
+				playing: false
+			};
+			var AIGame;
+			
+			var $ = function(id) { return document.getElementById(id); };
+			
+			window.addEventListener("load", function() {
+				$("dataget").addEventListener("click", function() {
+					var url = $("dataurl").value;
+					var req = new XMLHttpRequest();
+					req.open("GET", url, true);
+					req.onreadystatechange = function(e) {
+						if (req.readyState == 4 && req.status == 200) {
+							AIData = new Map();
+							var data = JSON.parse(req.responseText).data;
+							for (var i = 0; i < data.length; i+=3) {
+								AIData.set(data[i], [ data[i+1], data[i+2] ]);
+							}
+						}
+					};
+					req.send();
+				});
+				
+				$("gamestart").addEventListener("click", function() {
+					AIGame = new Minsweeper(16, 16, 40);
+					$("gameinfo").innerHTML = "";
+					if (!AIOptions.playing) {
+						play(true);
+					}
+				});
+				
+				$("gamepause").addEventListener("click", function() {
+					AIOptions.playing = !AIOptions.playing;
+				});
+				
+				$("gamestep").addEventListener("click", function() {
+					play(true);
+				});
+				
+				setInterval(play, 1000);
+			});
+			
+			function play(single) {
+				if (!single && !AIOptions.playing || AIGame === undefined) {
+					return;
+				}
+				
+				var idlist = "BFU012345678";
+				
+				var board = AIGame.getBoard2();
+				
+				// Find max probability
+				var maxr = -1;
+				var maxc = -1;
+				var maxp = 0;
+				var maxi = "";
+				var maxd = [ 0, 0 ];
+				
+				var width = AIOptions.width;
+				var height = AIOptions.height;
+				
+				// For each cell
+				for (var r = 0; r < height; r++) {
+					for (var c = 0; c < width; c++) {
+						
+						if (board[r][c] == -1) {
+							// Compute id
+							var id = "";
+							for (var dr = -2; dr <= 2; dr++) {
+								for (var dc = -2; dc <= 2; dc++) {
+									if (dr != 0 || dc != 0) {
+										var nr = r + dr;
+										var nc = c + dc;
+										var d = -3;
+										if (nr >= 0 && nr < height && nc >= 0 && nc < width) {
+											d = board[nr][nc];
+										}
+										id += idlist[d + 3];
+									}
+								}
+							}
+							
+							var probability = [ 0, 0 ];
+							var data = [ 0, 0 ];
+							if (AIData.has(id)) {
+								data = AIData.get(id);
+								probability = [ data[0], data[1] ];
+							}
+							if (
+								maxr < 0 ||
+								(
+									maxp[0] == 0 && probability[1] < maxp[1] ||
+									probability[0] / (probability[0] + probability[1]) > maxp[0] / (maxp[0] + maxp[1])
+								)
+							) {
+								maxr = r;
+								maxc = c;
+								maxp = probability;
+								maxi = id;
+								maxd = data;
+							}
+						}
+						
+					}
+				}
+				
+				// Open the cell of max probability
+				if (maxr >= 0) {
+					var result = AIGame.open(maxr, maxc);
+					if (AIGame.getState() == Minsweeper.DIED) {
+						AIOptions.playing = false;
+						$("gameinfo").innerHTML = "Died @ " + maxr + "," + maxc;
+					}
+					else if (AIGame.getState() == Minsweeper.COMPLETED) {
+						AIOptions.playing = false;
+						$("gameinfo").innerHTML = "Completed @ " + maxr + "," + maxc;;
+					}
+					else {
+						$("gameinfo").innerHTML = "Opened @ " + maxr + "," + maxc;
+					}
+				}
+				
+				// Display output with new board
+				var output = "";
+				board = AIGame.getBoard2();
+				for (var r = 0; r < height; r++) {
+					for (var c = 0; c < width; c++) {
+						output += idlist[board[r][c] + 3] + " ";
+					}
+					output += "\n";
+				}
+				$("gameboard").innerHTML = output;
+			}
+		</script>
+		
+		<style type="text/css">
+			body, button, input, div {
+				font-size: 1.25em;
+				font-family: "Ubuntu" sans-serif;
+			}
+			
+			#gameboard {
+				font-family: "Ubuntu Mono" monospace;
+				white-space: pre;
+			}
+		</style>
+	</head>
+	<body>
+		<input id="dataurl" type="text" size="20" value="/test/traindata.json" />
+		<button id="dataget">Retrieve Data</button>
+		<hr />
+		<button id="gamestart">New Game</button>
+		<button id="gamestep">Step</button>
+		<button id="gamepause">Pause/Resume</button>
+		<br />
+		<div id="gameboard"></div>
+		<div id="gameinfo"></div>
+	</body>
 </html>

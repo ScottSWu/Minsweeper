@@ -54,11 +54,6 @@ Minsweeper.prototype.getTime = function(time) {
 Minsweeper.prototype.open = function(r, c) {
     var result = this.board.open(r, c);
     switch (result) {
-        default:
-        case Minsweeper.Board.ALREADYOPENED:
-        case Minsweeper.Board.FLAGGED:
-        case Minsweeper.Board.OUTOFBOUNDS:
-            return;
         case Minsweeper.Board.SAFE:
         case Minsweeper.Board.MINE:
             if (!this.started) {
@@ -67,9 +62,10 @@ Minsweeper.prototype.open = function(r, c) {
                 this.state = Minsweeper.STARTED;
             }
             break;
+        default:
+            break;
     }
     switch (result) {
-        default:
         case Minsweeper.Board.SAFE:
             if (this.board.isCompleted()) {
                 this.endTime = Date.now();
@@ -80,7 +76,10 @@ Minsweeper.prototype.open = function(r, c) {
             this.endTime = Date.now();
             this.state = Minsweeper.DIED;
             break;
+        default:
+            break;
     }
+    return result;
 }
 
 /*
@@ -88,6 +87,7 @@ Minsweeper.prototype.open = function(r, c) {
 */
 Minsweeper.prototype.chord = function(r, c) {
     var result = this.board.chord(r, c);
+    return result;
 }
 
 /*
@@ -95,6 +95,7 @@ Minsweeper.prototype.chord = function(r, c) {
 */
 Minsweeper.prototype.flag = function(r, c) {
     var result = this.board.flag(r, c);
+    return result;
 }
 
 /*
@@ -154,4 +155,15 @@ Minsweeper.prototype.logBoard = function() {
 */
 Minsweeper.prototype.getState = function() {
     return this.state;
+}
+
+
+/**
+	If required, add to exports
+*/
+try {
+	module.exports = Minsweeper;
+}
+catch (e) {
+	
 }
